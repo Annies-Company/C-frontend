@@ -115,7 +115,10 @@ const firstSentence = (text = "") => {
   const cut = text.split(/(?<=[.!?])\s/)[0] || text;
   return cut.length > 74 ? cut.slice(0, 71).trimEnd() + "…" : cut;
 };
+// Only real, published feedback is ever quoted or scored. Until the first
+// review is published these are null and every place that shows them hides.
 export const PULL_QUOTE = (() => {
+  if (!REVIEWS_ARE_REAL) return null;
   const picked = REVIEWS.find((r) => r.pull) || [...REVIEWS].sort((a, b) => a.text.length - b.text.length)[0];
   return picked ? { text: picked.pull || firstSentence(picked.text), name: picked.name, rating: picked.rating } : null;
 })();
@@ -124,7 +127,7 @@ const average = (list) => list.reduce((n, r) => n + (Number(r.rating) || 0), 0) 
 
 export const RATING = REVIEWS_ARE_REAL
   ? { score: average(PUBLISHED_REVIEWS).toFixed(1), count: String(PUBLISHED_REVIEWS.length), basis: PUBLISHED_REVIEWS.length === 1 ? "review" : "reviews" }
-  : { score: "4.9", count: "380+", basis: "Lagos orders" };
+  : null;
 
 export const BAKERS = [
   // Captioned by role, not by name — these are stock stand-ins, and putting

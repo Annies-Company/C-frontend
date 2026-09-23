@@ -138,10 +138,14 @@ export default function Catalog({ initialQuery = "", initialOccasion = "", initi
           <span style={{ fontFamily: "Karla, sans-serif", fontSize: 13.5, color: tokens.inkSoft }}>
             {results.length} of {PRODUCTS.length} items
           </span>
-          <span style={{ width: 1, height: 16, background: tokens.line }} />
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: tokens.paper, border: `1px solid ${tokens.line}`, borderRadius: 999, padding: "5px 11px", fontFamily: "Karla, sans-serif", fontSize: 12.5, fontWeight: 700, color: tokens.ink }}>
-            <Star size={12} fill={tokens.gold} strokeWidth={0} /> {RATING.score}
-          </span>
+          {RATING && (
+            <>
+              <span style={{ width: 1, height: 16, background: tokens.line }} />
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: tokens.paper, border: `1px solid ${tokens.line}`, borderRadius: 999, padding: "5px 11px", fontFamily: "Karla, sans-serif", fontSize: 12.5, fontWeight: 700, color: tokens.ink }}>
+                <Star size={12} fill={tokens.gold} strokeWidth={0} /> {RATING.score}
+              </span>
+            </>
+          )}
         </div>
 
         <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "Karla, sans-serif", fontSize: 13.5, color: tokens.inkSoft }}>

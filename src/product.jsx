@@ -122,10 +122,12 @@ export default function ProductPage({ id }) {
         {/* ---- the counter conversation ---- */}
         <div>
           <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: "clamp(30px, 3.6vw, 42px)", color: tokens.ink, margin: "0 0 10px", lineHeight: 1.12 }}>{product.title}</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-            <Stars rating={5} />
-            <span style={{ fontFamily: "Karla, sans-serif", fontSize: 13, color: tokens.inkSoft }}>{RATING.score} · {RATING.count} {RATING.basis}</span>
-          </div>
+          {RATING && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <Stars rating={Math.round(Number(RATING.score))} />
+              <span style={{ fontFamily: "Karla, sans-serif", fontSize: 13, color: tokens.inkSoft }}>{RATING.score} · {RATING.count} {RATING.basis}</span>
+            </div>
+          )}
           <p style={{ fontFamily: "Karla, sans-serif", fontSize: 15.5, lineHeight: 1.7, color: tokens.inkSoft, margin: "0 0 20px" }}>{product.desc}</p>
 
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, paddingBottom: 20, borderBottom: `1px solid ${tokens.line}`, marginBottom: 22 }}>

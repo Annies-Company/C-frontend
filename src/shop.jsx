@@ -17,7 +17,7 @@ import {
   TikTok,
 } from "./icons.jsx";
 import { tokens, FONT_IMPORT, img, naira } from "./theme.js";
-import { PRODUCTS, RECIPES, NAV_LINKS, FOOTER_LINKS, REVIEWS_ARE_REAL, PHOTO_CREDITS, WHATSAPP, WHATSAPP_NUMBER, PHONE_DISPLAY, PHONE_HREF, BRAND, INSTAGRAM, TIKTOK, SHOP, HOURS, ANNOUNCEMENT } from "./data.js";
+import { PRODUCTS, RECIPES, NAV_LINKS, FOOTER_LINKS, PHOTO_CREDITS, WHATSAPP, WHATSAPP_NUMBER, PHONE_DISPLAY, PHONE_HREF, BRAND, INSTAGRAM, TIKTOK, SHOP, HOURS, ANNOUNCEMENT } from "./data.js";
 import { createOrder } from "./api.js";
 
 export const SOCIALS = [
@@ -638,10 +638,7 @@ export function Footer() {
         </div>
       </div>
       <p style={{ fontFamily: "Karla, sans-serif", fontSize: 12, color: "#8C647A", textAlign: "center", marginTop: 24, lineHeight: 1.7 }}>
-        © {BRAND.name}. A concept design, not a live storefront.
-        <br />
-        Photos marked as stock in src/seed.js are still temporary
-        {REVIEWS_ARE_REAL ? "." : ", and the reviews are placeholder copy until the first real feedback is published."}
+        © {new Date().getFullYear()} {BRAND.name}. Made fresh in Ayobo, Lagos.
       </p>
       <PhotoCredits />
     </footer>

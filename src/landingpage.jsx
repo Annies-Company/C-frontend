@@ -21,9 +21,6 @@ const MEALS = byCategory("Meals");
 // the frame crops to fit.
 const heroSlides = [
   { photo: PH.butterflyCakeWhitePink, tag: "Birthday Cakes" },
-  // cut out on blush, so it sits in the hero without a hard edge; nudged
-  // up so the topper stays in frame when the slot is wider than tall
-  { photo: PH.cocomelonCake, tag: "Custom Cakes", position: "50% 12%" },
   { photo: PH.weddingGoldMonogram, tag: "Wedding Cakes" },
   { photo: PH.smallChopsFoilTray, tag: "Small Chops & Trays" },
 ];
@@ -114,19 +111,19 @@ function Hero() {
 
       <div style={{ position: "relative", maxWidth: 1220, margin: "0 auto", padding: "clamp(64px, 10vw, 118px) 24px clamp(64px, 9vw, 104px)" }}>
         <div style={{ maxWidth: 640 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontFamily: "Karla, sans-serif", fontSize: 14.5, color: t.text, marginBottom: 22 }}>
-            {/* the stars belong to the quote beside them, so they show its score */}
-            <span style={{ display: "inline-flex", gap: 3, color: t.star }} aria-label={`${PULL_QUOTE?.rating ?? 5} out of 5`}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Star key={n} size={16} fill={n <= (PULL_QUOTE?.rating ?? 5) ? t.star : "none"} strokeWidth={n <= (PULL_QUOTE?.rating ?? 5) ? 0 : 1.5} />
-              ))}
-            </span>
-            {PULL_QUOTE && (
+          {PULL_QUOTE && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontFamily: "Karla, sans-serif", fontSize: 14.5, color: t.text, marginBottom: 22 }}>
+              {/* the stars belong to the quote beside them, so they show its score */}
+              <span style={{ display: "inline-flex", gap: 3, color: t.star }} aria-label={`${PULL_QUOTE.rating} out of 5`}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star key={n} size={16} fill={n <= PULL_QUOTE.rating ? t.star : "none"} strokeWidth={n <= PULL_QUOTE.rating ? 0 : 1.5} />
+                ))}
+              </span>
               <span>
                 “{PULL_QUOTE.text}” <span style={{ opacity: 0.75 }}>– {PULL_QUOTE.name}</span>
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
           <h1 style={{ fontFamily: DISPLAY, fontWeight: 900, fontSize: "clamp(38px, 6vw, 76px)", lineHeight: 1.02, letterSpacing: "-0.01em", textTransform: "uppercase", color: t.heading, margin: 0 }}>
             Cakes &amp; chops for <span style={{ color: t.accent }}>every party</span>
@@ -282,11 +279,11 @@ function StatBand() {
     { n: "1,200+", l: "Cakes Baked" },
     { n: "300+", l: "Recipes Shared" },
     { n: `${new Date().getFullYear() - FOUNDER.since}`, l: "Years Baking" },
-    { n: RATING.score, l: "Average Rating" },
-  ];
+    RATING && { n: RATING.score, l: "Average Rating" },
+  ].filter(Boolean);
   return (
     <section style={{ background: `linear-gradient(100deg, ${tokens.pinkDeep}, ${tokens.dark})`, padding: "40px 24px" }}>
-      <div className="grid-4" style={{ maxWidth: 1220, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }}>
+      <div className="grid-4" style={{ maxWidth: 1220, margin: "0 auto", display: "grid", gridTemplateColumns: `repeat(${stats.length}, 1fr)`, gap: 24 }}>
         {stats.map((s) => (
           <div key={s.l} style={{ textAlign: "center" }}>
             <div style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: "clamp(28px, 4vw, 40px)", color: tokens.onDark }}>{s.n}</div>
@@ -820,6 +817,25 @@ function Visit() {
  * Reviews — a shop feels alive because other people are visibly in it.
  * ------------------------------------------------------------------ */
 function Reviews() {
+  // No invented reviews on a live shop: until real feedback is published
+  // from #/admin/feedback, this section is only the invitation to leave some.
+  if (!REVIEWS_ARE_REAL) {
+    return (
+      <section id="reviews" style={{ background: tokens.pinkPale, padding: "80px 24px" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <SectionHeading eyebrow="From our customers" title="Tell us how the *party* went" />
+          </div>
+          <p style={{ fontFamily: "Fraunces, serif", fontSize: 17, color: tokens.ink, margin: "0 auto 26px", maxWidth: 560, lineHeight: 1.6 }}>
+            We would rather this wall were full of your words than ours. If we have baked for you, tell us how it went.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <FeedbackInvite />
+          </div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section id="reviews" style={{ background: tokens.pinkPale, padding: "92px 24px" }}>
       <div style={{ maxWidth: 1220, margin: "0 auto" }}>
@@ -857,9 +873,7 @@ function Reviews() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", justifyContent: "space-between", marginTop: 34, paddingTop: 28, borderTop: `1px solid ${tokens.line}` }}>
           <p style={{ fontFamily: "Fraunces, serif", fontSize: 17, color: tokens.ink, margin: 0, maxWidth: 560, lineHeight: 1.6 }}>
-            {REVIEWS_ARE_REAL
-              ? "Every one of these was left by someone who ordered. If that was you, the party is over and the plates are washed — tell us how it went."
-              : "We would rather this wall were full of your words than ours. If we have baked for you, tell us how it went."}
+            Every one of these was left by someone who ordered. If that was you, the party is over and the plates are washed — tell us how it went.
           </p>
           <FeedbackInvite />
         </div>
