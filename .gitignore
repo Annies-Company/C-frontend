@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+
+# Full-size originals: large, and phone photos carry GPS location and
+# unedited shots of people. The site only needs public/images.
+photos/
