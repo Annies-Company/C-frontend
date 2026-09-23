@@ -1,19 +1,35 @@
 /* ------------------------------------------------------------------ *
  * The one place the front end talks to a backend.
  *
- * Set VITE_API_URL (e.g. in .env: VITE_API_URL=http://localhost:8080)
- * and every call below goes to the Rust API described in API.md.
+ * Set VITE_API_URL (e.g. in .env: VITE_API_URL=http://localhost:8080,
+ * or "/" to go through the dev proxy) and the areas listed in LIVE_AREAS
+ * go to the Rust API described in API.md.
  *
- * Leave it unset and the site runs in PREVIEW MODE: the same calls are
- * answered from this browser's localStorage, so the admin panel can be
- * clicked through and tested before the backend exists. Nothing saved in
+ * Every other area runs in PREVIEW MODE: the same calls are answered
+ * from this browser's localStorage, so the admin panel can be clicked
+ * through and tested before the backend has that part. Nothing saved in
  * preview mode reaches any other device.
  * ------------------------------------------------------------------ */
 import { SEED_PRODUCTS, SEED_SETTINGS } from "./seed.js";
 import { SITE } from "./site-store.js";
 
 const API_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-export const PREVIEW_MODE = !API_URL;
+const HAS_BACKEND = Boolean(import.meta.env.VITE_API_URL);
+
+// The parts of API.md the Rust server already answers. Add an area once
+// its endpoints match the contract:
+//   auth      login, logout, me
+//   feedback  POST /api/feedback, /api/admin/feedback, reviews in /api/site
+//   site      products and settings in GET /api/site
+//   orders    POST /api/orders, /api/admin/orders
+//   products  /api/admin/products, /api/admin/uploads
+//   settings  /api/admin/settings
+const LIVE_AREAS = ["auth", "feedback"];
+const ALL_AREAS = ["auth", "feedback", "site", "orders", "products", "settings"];
+
+export const isLive = (area) => HAS_BACKEND && LIVE_AREAS.includes(area);
+// True while anything is still answered from this browser.
+export const PREVIEW_MODE = !ALL_AREAS.every(isLive);
 
 // ---- real backend -----------------------------------------------------
 
@@ -25,7 +41,9 @@ async function http(method, path, body) {
     headers: body && !isForm ? { "Content-Type": "application/json" } : undefined,
     body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
   });
-  if (res.status === 401) throw new ApiError("Please log in again.", 401);
+  // A 401 from the login form carries its own message ("wrong password");
+  // anywhere else it means the session ran out.
+  if (res.status === 401 && path !== "/api/admin/login") throw new ApiError("Please log in again.", 401);
   if (!res.ok) {
     let message = `Something went wrong (${res.status}).`;
     try {
@@ -75,11 +93,12 @@ const wait = (v) => new Promise((r) => setTimeout(() => r(clone(v)), 150));
 // Called once before the app renders. Never throws: if the API is down the
 // customer still gets the seed menu instead of a blank page.
 export async function loadSite() {
+  Object.assign(SITE, previewSite());
+  if (!isLive("site") && !isLive("feedback")) return;
   try {
-    const site = PREVIEW_MODE ? previewSite() : await http("GET", "/api/site");
-    SITE.products = site.products;
-    SITE.settings = site.settings;
-    SITE.reviews = site.reviews;
+    const live = await http("GET", "/api/site");
+    if (isLive("site")) Object.assign(SITE, { products: live.products, settings: live.settings });
+    if (isLive("feedback")) SITE.reviews = live.reviews;
   } catch (err) {
     console.warn("Could not load live menu, showing the built-in one.", err);
   }
@@ -87,7 +106,7 @@ export async function loadSite() {
 
 // Sent when a customer taps "Confirm on WhatsApp".
 export async function createOrder(order) {
-  if (!PREVIEW_MODE) return http("POST", "/api/orders", order);
+  if (isLive("orders")) return http("POST", "/api/orders", order);
   const db = readDb();
   const saved = { ...order, id: `AC-${Date.now().toString(36).toUpperCase()}`, status: "new", createdAt: new Date().toISOString() };
   db.orders.unshift(saved);
@@ -100,7 +119,7 @@ export async function createOrder(order) {
  * reaches the website until it is published from #/admin/feedback.
  * ------------------------------------------------------------------ */
 export async function submitFeedback(feedback) {
-  if (!PREVIEW_MODE) return http("POST", "/api/feedback", feedback);
+  if (isLive("feedback")) return http("POST", "/api/feedback", feedback);
   const db = readDb();
   const saved = { ...feedback, id: `FB-${Date.now().toString(36).toUpperCase()}`, status: "new", createdAt: new Date().toISOString() };
   db.feedback.unshift(saved);
@@ -124,7 +143,7 @@ const publishable = (feedback) =>
 // ---- admin ------------------------------------------------------------
 
 export async function login(email, password) {
-  if (!PREVIEW_MODE) return http("POST", "/api/admin/login", { email, password });
+  if (isLive("auth")) return http("POST", "/api/admin/login", { email, password });
   if (email.trim().toLowerCase() !== PREVIEW_LOGIN.email || password !== PREVIEW_LOGIN.password) {
     await wait(null);
     throw new ApiError("That email and password don't match.", 401);
@@ -135,12 +154,12 @@ export async function login(email, password) {
 }
 
 export async function logout() {
-  if (!PREVIEW_MODE) return http("POST", "/api/admin/logout");
+  if (isLive("auth")) return http("POST", "/api/admin/logout");
   sessionStorage.removeItem(SESSION_KEY);
 }
 
 export async function currentUser() {
-  if (!PREVIEW_MODE) {
+  if (isLive("auth")) {
     try {
       return await http("GET", "/api/admin/me");
     } catch (err) {
@@ -156,13 +175,13 @@ export async function currentUser() {
 }
 
 export async function listProducts() {
-  if (!PREVIEW_MODE) return http("GET", "/api/admin/products");
+  if (isLive("products")) return http("GET", "/api/admin/products");
   return wait(readDb().products);
 }
 
 // Creates when the id is new, updates otherwise.
 export async function saveProduct(product, { isNew }) {
-  if (!PREVIEW_MODE) {
+  if (isLive("products")) {
     return isNew ? http("POST", "/api/admin/products", product) : http("PUT", `/api/admin/products/${product.id}`, product);
   }
   const db = readDb();
@@ -175,7 +194,7 @@ export async function saveProduct(product, { isNew }) {
 }
 
 export async function deleteProduct(id) {
-  if (!PREVIEW_MODE) return http("DELETE", `/api/admin/products/${id}`);
+  if (isLive("products")) return http("DELETE", `/api/admin/products/${id}`);
   const db = readDb();
   db.products = db.products.filter((p) => p.id !== id);
   writeDb(db);
@@ -184,7 +203,7 @@ export async function deleteProduct(id) {
 // Returns the URL to store on the product. The real API should resize,
 // store in R2/S3 and answer with { url }.
 export async function uploadImage(file) {
-  if (!PREVIEW_MODE) {
+  if (isLive("products")) {
     const form = new FormData();
     form.append("file", file);
     return (await http("POST", "/api/admin/uploads", form)).url;
@@ -193,12 +212,12 @@ export async function uploadImage(file) {
 }
 
 export async function listOrders() {
-  if (!PREVIEW_MODE) return http("GET", "/api/admin/orders");
+  if (isLive("orders")) return http("GET", "/api/admin/orders");
   return wait(readDb().orders);
 }
 
 export async function updateOrderStatus(id, status) {
-  if (!PREVIEW_MODE) return http("PATCH", `/api/admin/orders/${id}`, { status });
+  if (isLive("orders")) return http("PATCH", `/api/admin/orders/${id}`, { status });
   const db = readDb();
   const order = db.orders.find((o) => o.id === id);
   if (order) order.status = status;
@@ -207,7 +226,7 @@ export async function updateOrderStatus(id, status) {
 }
 
 export async function listFeedback() {
-  if (!PREVIEW_MODE) return http("GET", "/api/admin/feedback");
+  if (isLive("feedback")) return http("GET", "/api/admin/feedback");
   return wait(readDb().feedback);
 }
 
@@ -219,7 +238,7 @@ export async function listFeedback() {
  * real backend has to enforce the same rule (see API.md); the UI is not
  * the place where a promise like that is kept. */
 export async function updateFeedbackStatus(id, status) {
-  if (!PREVIEW_MODE) return http("PATCH", `/api/admin/feedback/${id}`, { status });
+  if (isLive("feedback")) return http("PATCH", `/api/admin/feedback/${id}`, { status });
   const db = readDb();
   const entry = db.feedback.find((f) => f.id === id);
   if (!entry) throw new ApiError("That feedback is no longer here.", 404);
@@ -232,19 +251,19 @@ export async function updateFeedbackStatus(id, status) {
 }
 
 export async function deleteFeedback(id) {
-  if (!PREVIEW_MODE) return http("DELETE", `/api/admin/feedback/${id}`);
+  if (isLive("feedback")) return http("DELETE", `/api/admin/feedback/${id}`);
   const db = readDb();
   db.feedback = db.feedback.filter((f) => f.id !== id);
   writeDb(db);
 }
 
 export async function getSettings() {
-  if (!PREVIEW_MODE) return http("GET", "/api/admin/settings");
+  if (isLive("settings")) return http("GET", "/api/admin/settings");
   return wait({ ...SEED_SETTINGS, ...readDb().settings });
 }
 
 export async function saveSettings(settings) {
-  if (!PREVIEW_MODE) return http("PUT", "/api/admin/settings", settings);
+  if (isLive("settings")) return http("PUT", "/api/admin/settings", settings);
   const db = readDb();
   db.settings = settings;
   writeDb(db);

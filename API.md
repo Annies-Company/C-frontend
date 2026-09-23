@@ -9,11 +9,18 @@ to one endpoint below.
 Create `.env` in the project root (see `.env.example`):
 
 ```
-VITE_API_URL=http://localhost:8080
+VITE_API_URL=/
+VITE_API_PROXY=http://localhost:8080
 ```
 
-Restart `npm run dev`. The "Preview mode" banner disappears and every call
-goes to the server. Without it, the site answers from localStorage.
+Restart `npm run dev`. Vite forwards `/api` to `VITE_API_PROXY`, so the
+server looks same-origin to the browser, which a `SameSite=Lax` session
+cookie needs. In production, serve the API from the same site (a host
+rewrite of `/api/*`, or a subdomain such as `api.<shop domain>`).
+
+Only the areas listed in `LIVE_AREAS` in `src/api.js` go to the server;
+the rest answer from localStorage. Add an area once its endpoints match
+this document.
 
 All requests from the admin panel are sent with `credentials: "include"`, so
 the server must:

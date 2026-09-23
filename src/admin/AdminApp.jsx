@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { tokens, naira } from "../theme.js";
 import { Wordmark } from "../shop.jsx";
 import { LayoutDashboard, Package, Receipt, Star, Settings as SettingsIcon, ExternalLink, LogOut, Plus, ArrowRight } from "../icons.jsx";
-import { PREVIEW_MODE, PREVIEW_LOGIN, currentUser, login, logout, listOrders, listProducts, listFeedback } from "../api.js";
+import { PREVIEW_MODE, PREVIEW_LOGIN, isLive, currentUser, login, logout, listOrders, listProducts, listFeedback } from "../api.js";
 import { ADMIN_CSS, ToastProvider, Button, Card, Field, Input, Notice, PageTitle, font, serif } from "./ui.jsx";
 import { ProductList, ProductEditor } from "./Products.jsx";
 import Orders from "./Orders.jsx";
@@ -103,7 +103,7 @@ function Shell({ path, user, onLogout, children }) {
           {PREVIEW_MODE && (
             <div style={{ marginBottom: 18 }}>
               <Notice>
-                <strong>Preview mode.</strong> Changes are saved on this device only, until the backend is connected.
+                <strong>Preview mode.</strong> {isLive("auth") ? "Some changes are" : "Changes are"} saved on this device only, until the backend is connected.
               </Notice>
             </div>
           )}
@@ -166,7 +166,7 @@ function Login({ onDone }) {
         <Button type="submit" disabled={busy} style={{ width: "100%", marginTop: 6 }}>
           {busy ? "Logging in…" : "Log in"}
         </Button>
-        {PREVIEW_MODE && (
+        {!isLive("auth") && (
           <div style={{ marginTop: 18 }}>
             <Notice>
               Preview login: <strong>{PREVIEW_LOGIN.email}</strong> / <strong>{PREVIEW_LOGIN.password}</strong>
